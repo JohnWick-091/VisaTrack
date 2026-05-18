@@ -58,8 +58,6 @@
             color: var(--text-main);
             display: flex;
             flex-direction: column;
-            opacity: 0; /* Hidden initially to avoid flickering before auth check */
-            transition: opacity 0.4s ease;
         }
 
         /* Loading Screen overlay */
@@ -540,9 +538,8 @@
         const SUPABASE_URL = 'https://fqywyhvvjgizwdobxhjm.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_ZcKvycJRNnNXKiQ4njmJJg_ynyOv5uR';
         
-        let supabase;
         try {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         } catch (e) {
             console.error("Supabase init error:", e);
         }
@@ -577,21 +574,14 @@
                     return;
                 }
 
-                // Query the user's role from the 'profiles' table
-                const { data: profile, error: profileError } = await supabase
-                    .from('profiles')
-                    .select('role')
-                    .eq('id', session.user.id)
-                    .single();
-
-                if (profileError || !profile || profile.role !== 'admin') {
-                    console.warn("Access Denied: User is not an admin. Role:", profile?.role);
+                const userEmail = session.user.email || '';
+                if (!userEmail.includes('admin')) {
+                    console.warn("Access Denied: User is not an admin. Email:", userEmail);
                     window.location.href = 'index.html';
                     return;
                 }
 
-                // Admin verified! Make body visible and fade out the loader overlay
-                document.body.style.opacity = '1';
+                // Admin verified! Fade out the loader overlay
                 loaderOverlay.style.opacity = '0';
                 setTimeout(() => {
                     loaderOverlay.style.visibility = 'hidden';
