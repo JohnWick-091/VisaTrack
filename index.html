@@ -430,9 +430,8 @@
         const SUPABASE_URL = 'https://fqywyhvvjgizwdobxhjm.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_ZcKvycJRNnNXKiQ4njmJJg_ynyOv5uR';
         
-        let supabase;
         try {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         } catch (e) {
             console.error("Supabase init error (keys missing):", e);
         }
