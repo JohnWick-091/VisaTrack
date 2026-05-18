@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisaTrack | Admin Panel</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            /* Colors */
+            --bg-gradient: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%);
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.8);
+            --glass-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --primary-color: #0ea5e9;
+            --btn-dark: #0f172a;
+            --btn-dark-hover: #1e293b;
+            --input-bg: rgba(255, 255, 255, 0.8);
+            --input-border: #cbd5e1;
+            --error-color: #ef4444;
+            
+            /* Status Badge Colors */
+            --status-submitted-bg: rgba(245, 158, 11, 0.1);
+            --status-submitted-text: #b45309;
+            --status-review-bg: rgba(14, 165, 233, 0.1);
+            --status-review-text: #0369a1;
+            --status-approved-bg: rgba(16, 185, 129, 0.1);
+            --status-approved-text: #047857;
+            --status-rejected-bg: rgba(239, 68, 68, 0.1);
+            --status-rejected-text: #b91c1c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: 
+                linear-gradient(135deg, rgba(224, 242, 254, 0.4) 0%, rgba(186, 230, 253, 0.2) 50%, rgba(125, 211, 252, 0.4) 100%),
+                url('https://images.unsplash.com/photo-1499346030926-9a72daac6c63?auto=format&fit=crop&w=1920&q=80') center/cover fixed;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            opacity: 0; /* Hidden initially to avoid flickering before auth check */
+            transition: opacity 0.4s ease;
+        }
+
+        /* Loading Screen overlay */
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #bae6fd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+
+        .loader-content {
+            text-align: center;
+            color: var(--text-main);
+        }
+
+        .main-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(15, 23, 42, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Top Navbar */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.875rem 2.5rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon-container {
+            width: 36px;
+            height: 36px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+        }
+
+        .logo-icon-container i {
+            font-size: 1.25rem;
+            color: #ffffff;
+        }
+
+        .logo-text {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
+        }
+
+        .nav-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-main);
+            background: rgba(14, 165, 233, 0.1);
+            padding: 0.4rem 1.25rem;
+            border-radius: 99px;
+            border: 1px solid rgba(14, 165, 233, 0.2);
+        }
+
+        .btn-logout {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.25rem;
+            background: #ffffff;
+            border: 1px solid var(--input-border);
+            color: var(--text-main);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 550;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-logout:hover {
+            background: var(--error-color);
+            color: #ffffff;
+            border-color: var(--error-color);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+        }
+
+        /* Main Area */
+        .main-content {
+            flex: 1;
+            padding: 2.5rem;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .stat-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            box-shadow: var(--glass-shadow);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .stat-icon.blue { background: rgba(14, 165, 233, 0.15); color: #0284c7; }
+        .stat-icon.yellow { background: rgba(245, 158, 11, 0.15); color: #d97706; }
+        .stat-icon.green { background: rgba(16, 185, 129, 0.15); color: #059669; }
+        .stat-icon.red { background: rgba(239, 68, 68, 0.15); color: #dc2626; }
+
+        .stat-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-main);
+            line-height: 1.2;
+            margin-top: 0.15rem;
+        }
+
+        /* Cases Card Table */
+        .dashboard-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: var(--glass-shadow);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.75rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .btn-refresh {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #ffffff;
+            border: 1px solid var(--input-border);
+            color: var(--text-muted);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-refresh:hover {
+            border-color: var(--text-main);
+            color: var(--text-main);
+        }
+
+        /* Table CSS */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .cases-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.925rem;
+        }
+
+        .cases-table th {
+            padding: 1rem 1.25rem;
+            background: rgba(255, 255, 255, 0.5);
+            font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--input-border);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+        .cases-table td {
+            padding: 1.15rem 1.25rem;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+            color: var(--text-main);
+        }
+
+        .cases-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .cases-table tr:hover td {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.35rem 0.85rem;
+            border-radius: 99px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        .status-badge.submitted {
+            background: var(--status-submitted-bg);
+            color: var(--status-submitted-text);
+        }
+
+        .status-badge.review {
+            background: var(--status-review-bg);
+            color: var(--status-review-text);
+        }
+
+        .status-badge.approved {
+            background: var(--status-approved-bg);
+            color: var(--status-approved-text);
+        }
+
+        .status-badge.rejected {
+            background: var(--status-rejected-bg);
+            color: var(--status-rejected-text);
+        }
+
+        .status-badge i {
+            font-size: 0.9rem;
+        }
+
+        /* Buttons */
+        .btn-view {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.45rem 0.85rem;
+            background: var(--btn-dark);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.825rem;
+            font-weight: 550;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-view:hover {
+            background: var(--btn-dark-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.15);
+        }
+
+        /* Loading / Error States for Table */
+        .table-state {
+            padding: 3rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .table-state .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid rgba(15, 23, 42, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+            margin-bottom: 0.75rem;
+        }
+
+        .table-state.error {
+            color: var(--error-color);
+        }
+
+        .table-state.error i {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 1rem 1.5rem;
+            }
+            .nav-title {
+                display: none;
+            }
+            .main-content {
+                padding: 1.5rem 1rem;
+            }
+            .dashboard-card {
+                padding: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Overlay -->
+    <div class="loader-overlay" id="loaderOverlay">
+        <div class="loader-content">
+            <div class="main-spinner"></div>
+            <p style="font-weight: 500; font-size: 1.05rem;">Validating credentials...</p>
+        </div>
+    </div>
+
+    <!-- Top Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-logo">
+            <div class="logo-icon-container">
+                <i class="ph-fill ph-airplane-tilt"></i>
+            </div>
+            <span class="logo-text">VisaTrack</span>
+        </div>
+        <div class="nav-title">Admin Panel</div>
+        <button class="btn-logout" id="logoutBtn">
+            <i class="ph ph-sign-out"></i> Logout
+        </button>
+    </nav>
+
+    <!-- Main Workspace -->
+    <main class="main-content">
+        
+        <!-- Metrics Counters -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="ph-bold ph-folders"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Total Cases</span>
+                    <span class="stat-value" id="statTotal">-</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon yellow">
+                    <i class="ph-bold ph-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Pending</span>
+                    <span class="stat-value" id="statPending">-</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="ph-bold ph-check-circle"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Approved</span>
+                    <span class="stat-value" id="statApproved">-</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red">
+                    <i class="ph-bold ph-x-circle"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Rejected</span>
+                    <span class="stat-value" id="statRejected">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cases Management Card -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h2 class="card-title">Recent Visa Applications</h2>
+                <button class="btn-refresh" id="refreshBtn">
+                    <i class="ph ph-arrows-clockwise"></i> Refresh Data
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="cases-table">
+                    <thead>
+                        <tr>
+                            <th>Client Name</th>
+                            <th>Visa Type</th>
+                            <th>Nationality</th>
+                            <th>Status</th>
+                            <th>Date Submitted</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="casesTableBody">
+                        <tr>
+                            <td colspan="6" class="table-state">
+                                <div class="spinner"></div>
+                                <div>Loading case records...</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- 1. Supabase Config & Client Setup ---
+        const SUPABASE_URL = 'https://fqywyhvvjgizwdobxhjm.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_ZcKvycJRNnNXKiQ4njmJJg_ynyOv5uR';
+        
+        let supabase;
+        try {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } catch (e) {
+            console.error("Supabase init error:", e);
+        }
+
+        // --- 2. DOM Elements ---
+        const loaderOverlay = document.getElementById('loaderOverlay');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const casesTableBody = document.getElementById('casesTableBody');
+        
+        // Stat counters
+        const statTotal = document.getElementById('statTotal');
+        const statPending = document.getElementById('statPending');
+        const statApproved = document.getElementById('statApproved');
+        const statRejected = document.getElementById('statRejected');
+
+        // --- 3. Authentication & Security Check ---
+        window.addEventListener('DOMContentLoaded', async () => {
+            if (!supabase) {
+                alert("Failed to connect to backend service. Check configuration.");
+                window.location.href = 'index.html';
+                return;
+            }
+
+            try {
+                // Fetch the current active session
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+                if (sessionError || !session || !session.user) {
+                    console.warn("No active session found. Redirecting to login.");
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                // Query the user's role from the 'profiles' table
+                const { data: profile, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', session.user.id)
+                    .single();
+
+                if (profileError || !profile || profile.role !== 'admin') {
+                    console.warn("Access Denied: User is not an admin. Role:", profile?.role);
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                // Admin verified! Make body visible and fade out the loader overlay
+                document.body.style.opacity = '1';
+                loaderOverlay.style.opacity = '0';
+                setTimeout(() => {
+                    loaderOverlay.style.visibility = 'hidden';
+                }, 400);
+
+                // Load case details
+                loadDashboardData();
+
+            } catch (err) {
+                console.error("Authentication security check crashed:", err);
+                window.location.href = 'index.html';
+            }
+        });
+
+        // --- 4. Data Loading & Operations ---
+        async function loadDashboardData() {
+            setTableLoading();
+            
+            try {
+                // Fetch all cases and attempt to join with profiles for the full name
+                const { data: cases, error: casesError } = await supabase
+                    .from('cases')
+                    .select('*, profiles(full_name, email)');
+
+                if (casesError) throw casesError;
+
+                displayStatsAndTable(cases);
+
+            } catch (err) {
+                console.error("Primary fetch failed, running fallback without join:", err);
+                
+                try {
+                    // Robust fallback: fetch cases directly if join schema is custom
+                    const { data: fallbackCases, error: fallbackError } = await supabase
+                        .from('cases')
+                        .select('*');
+
+                    if (fallbackError) throw fallbackError;
+
+                    displayStatsAndTable(fallbackCases, true);
+
+                } catch (fallbackErr) {
+                    console.error("Fallback query also failed:", fallbackErr);
+                    setTableError("Failed to fetch visa applications from Supabase.");
+                }
+            }
+        }
+
+        function displayStatsAndTable(cases, isFallback = false) {
+            if (!cases || cases.length === 0) {
+                statTotal.textContent = '0';
+                statPending.textContent = '0';
+                statApproved.textContent = '0';
+                statRejected.textContent = '0';
+                
+                casesTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="table-state">
+                            <i class="ph ph-folder-open" style="font-size: 2rem; margin-bottom: 0.5rem; display: block;"></i>
+                            No visa applications found in the database.
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            // 1. Calculate and update count metrics
+            const total = cases.length;
+            const pending = cases.filter(c => c.status === 'Submitted' || c.status === 'Under Review' || !c.status).length;
+            const approved = cases.filter(c => c.status === 'Approved').length;
+            const rejected = cases.filter(c => c.status === 'Rejected').length;
+
+            statTotal.textContent = total.toString();
+            statPending.textContent = pending.toString();
+            statApproved.textContent = approved.toString();
+            statRejected.textContent = rejected.toString();
+
+            // 2. Render list table rows
+            casesTableBody.innerHTML = '';
+            
+            cases.forEach(caseItem => {
+                const tr = document.createElement('tr');
+                
+                // Retrieve Client Name (handle fallback robustly)
+                let clientName = 'Unknown Client';
+                if (!isFallback && caseItem.profiles) {
+                    clientName = caseItem.profiles.full_name || caseItem.profiles.email || 'Client';
+                } else {
+                    clientName = `Client ID: ${caseItem.user_id ? caseItem.user_id.substring(0, 8) : 'Unknown'}...`;
+                }
+
+                // Render Visa Type and Nationality
+                const visaType = caseItem.visa_type || 'General Visa';
+                const nationality = caseItem.nationality || 'Not specified';
+                
+                // Format Status Badge
+                const rawStatus = caseItem.status || 'Submitted';
+                let statusClass = 'submitted';
+                let statusIcon = 'ph-clock';
+
+                if (rawStatus === 'Under Review') {
+                    statusClass = 'review';
+                    statusIcon = 'ph-eye';
+                } else if (rawStatus === 'Approved') {
+                    statusClass = 'approved';
+                    statusIcon = 'ph-check-circle';
+                } else if (rawStatus === 'Rejected') {
+                    statusClass = 'rejected';
+                    statusIcon = 'ph-x-circle';
+                }
+
+                const statusBadgeHTML = `
+                    <span class="status-badge ${statusClass}">
+                        <i class="ph-bold ${statusIcon}"></i>
+                        ${rawStatus}
+                    </span>`;
+
+                // Format Submitted Date
+                let formattedDate = 'N/A';
+                if (caseItem.created_at) {
+                    try {
+                        formattedDate = new Date(caseItem.created_at).toLocaleDateString(undefined, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                        });
+                    } catch (e) {
+                        formattedDate = caseItem.created_at;
+                    }
+                }
+
+                // Set Action View URL
+                const caseId = caseItem.id;
+                const viewActionHTML = `
+                    <a href="admin-case.html?id=${caseId}" class="btn-view">
+                        <i class="ph ph-eye"></i> View
+                    </a>`;
+
+                tr.innerHTML = `
+                    <td style="font-weight: 600;">${clientName}</td>
+                    <td>${visaType}</td>
+                    <td>${nationality}</td>
+                    <td>${statusBadgeHTML}</td>
+                    <td>${formattedDate}</td>
+                    <td>${viewActionHTML}</td>
+                `;
+
+                casesTableBody.appendChild(tr);
+            });
+        }
+
+        // --- 5. Helper State Handlers ---
+        function setTableLoading() {
+            casesTableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="table-state">
+                        <div class="spinner"></div>
+                        <div>Fetching latest case records...</div>
+                    </td>
+                </tr>`;
+        }
+
+        function setTableError(message) {
+            casesTableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="table-state error">
+                        <i class="ph ph-warning-circle"></i>
+                        <div>${message}</div>
+                    </td>
+                </tr>`;
+        }
+
+        // --- 6. Event Listeners ---
+        // Refresh Button
+        refreshBtn.addEventListener('click', loadDashboardData);
+
+        // Logout Operations
+        logoutBtn.addEventListener('click', async () => {
+            if (!supabase) return;
+            try {
+                await supabase.auth.signOut();
+                window.location.href = 'index.html';
+            } catch (err) {
+                console.error("Logout query failed:", err);
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+</body>
+</html>
