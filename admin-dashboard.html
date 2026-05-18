@@ -601,36 +601,22 @@
             setTableLoading();
             
             try {
-                // Fetch all cases and attempt to join with profiles for the full name
+                // Fetch cases directly from cases table (no profiles join)
                 const { data: cases, error: casesError } = await supabase
                     .from('cases')
-                    .select('*, profiles(full_name, email)');
+                    .select('*');
 
                 if (casesError) throw casesError;
 
                 displayStatsAndTable(cases);
 
             } catch (err) {
-                console.error("Primary fetch failed, running fallback without join:", err);
-                
-                try {
-                    // Robust fallback: fetch cases directly if join schema is custom
-                    const { data: fallbackCases, error: fallbackError } = await supabase
-                        .from('cases')
-                        .select('*');
-
-                    if (fallbackError) throw fallbackError;
-
-                    displayStatsAndTable(fallbackCases, true);
-
-                } catch (fallbackErr) {
-                    console.error("Fallback query also failed:", fallbackErr);
-                    setTableError("Failed to fetch visa applications from Supabase.");
-                }
+                console.error("Fetch failed:", err);
+                setTableError("Failed to fetch visa applications from Supabase.");
             }
         }
 
-        function displayStatsAndTable(cases, isFallback = false) {
+        function displayStatsAndTable(cases) {
             if (!cases || cases.length === 0) {
                 statTotal.textContent = '0';
                 statPending.textContent = '0';
@@ -664,11 +650,12 @@
             cases.forEach(caseItem => {
                 const tr = document.createElement('tr');
                 
-                // Retrieve Client Name (handle fallback robustly)
-                let clientName = 'Unknown Client';
-                if (!isFallback && caseItem.profiles) {
-                    clientName = caseItem.profiles.full_name || caseItem.profiles.email || 'Client';
-                } else {
+                // Retrieve Client Name (display whatever columns are available)
+                let clientName = caseItem.client_name || caseItem.full_name || caseItem.email || caseItem.name;
+                if (!clientName && caseItem.profiles) {
+                    clientName = caseItem.profiles.full_name || caseItem.profiles.email || caseItem.profiles.name;
+                }
+                if (!clientName) {
                     clientName = `Client ID: ${caseItem.user_id ? caseItem.user_id.substring(0, 8) : 'Unknown'}...`;
                 }
 
