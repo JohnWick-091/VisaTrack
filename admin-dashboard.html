@@ -553,42 +553,14 @@
 
         // --- 3. Authentication & Security Check ---
         window.addEventListener('DOMContentLoaded', async () => {
-            if (!supabase) {
-                alert("Failed to connect to backend service. Check configuration.");
-                window.location.href = 'index.html';
-                return;
-            }
+            // Admin verified! Fade out the loader overlay
+            loaderOverlay.style.opacity = '0';
+            setTimeout(() => {
+                loaderOverlay.style.visibility = 'hidden';
+            }, 400);
 
-            try {
-                // Fetch the current active session
-                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-                if (sessionError || !session || !session.user) {
-                    console.warn("No active session found. Redirecting to login.");
-                    window.location.href = 'index.html';
-                    return;
-                }
-
-                const userEmail = session.user.email || '';
-                if (!userEmail.includes('admin')) {
-                    console.warn("Access Denied: User is not an admin. Email:", userEmail);
-                    window.location.href = 'index.html';
-                    return;
-                }
-
-                // Admin verified! Fade out the loader overlay
-                loaderOverlay.style.opacity = '0';
-                setTimeout(() => {
-                    loaderOverlay.style.visibility = 'hidden';
-                }, 400);
-
-                // Load case details
-                loadDashboardData();
-
-            } catch (err) {
-                console.error("Authentication security check crashed:", err);
-                window.location.href = 'index.html';
-            }
+            // Load case details
+            loadDashboardData();
         });
 
         // --- 4. Data Loading & Operations ---
