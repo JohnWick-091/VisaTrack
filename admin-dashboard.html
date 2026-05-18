@@ -60,41 +60,6 @@
             flex-direction: column;
         }
 
-        /* Loading Screen overlay */
-        .loader-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #bae6fd;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            transition: opacity 0.4s ease, visibility 0.4s ease;
-        }
-
-        .loader-content {
-            text-align: center;
-            color: var(--text-main);
-        }
-
-        .main-spinner {
-            width: 48px;
-            height: 48px;
-            border: 4px solid rgba(15, 23, 42, 0.1);
-            border-radius: 50%;
-            border-top-color: var(--primary-color);
-            animation: spin 0.8s linear infinite;
-            display: inline-block;
-            margin-bottom: 1rem;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
         /* Top Navbar */
         .navbar {
             display: flex;
@@ -172,7 +137,7 @@
             box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
         }
 
-        /* Main Area */
+        /* Main Content */
         .main-content {
             flex: 1;
             padding: 2.5rem;
@@ -181,7 +146,7 @@
             margin: 0 auto;
         }
 
-        /* Stats Cards */
+        /* Metrics Grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -242,7 +207,7 @@
             margin-top: 0.15rem;
         }
 
-        /* Cases Card Table */
+        /* Cases Management Card */
         .dashboard-card {
             background: var(--glass-bg);
             backdrop-filter: blur(20px);
@@ -286,7 +251,7 @@
             color: var(--text-main);
         }
 
-        /* Table CSS */
+        /* Table */
         .table-responsive {
             width: 100%;
             overflow-x: auto;
@@ -386,7 +351,7 @@
             box-shadow: 0 4px 10px rgba(15, 23, 42, 0.15);
         }
 
-        /* Loading / Error States for Table */
+        /* States */
         .table-state {
             padding: 3rem;
             text-align: center;
@@ -415,6 +380,10 @@
             display: block;
         }
 
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         @media (max-width: 768px) {
             .navbar {
                 padding: 1rem 1.5rem;
@@ -433,14 +402,6 @@
 </head>
 <body>
 
-    <!-- Loading Overlay -->
-    <div class="loader-overlay" id="loaderOverlay">
-        <div class="loader-content">
-            <div class="main-spinner"></div>
-            <p style="font-weight: 500; font-size: 1.05rem;">Validating credentials...</p>
-        </div>
-    </div>
-
     <!-- Top Navigation Bar -->
     <nav class="navbar">
         <div class="nav-logo">
@@ -449,8 +410,8 @@
             </div>
             <span class="logo-text">VisaTrack</span>
         </div>
-        <div class="nav-title">Admin Panel</div>
-        <button class="btn-logout" id="logoutBtn">
+        <div class="nav-title">Admin Panel (Direct Access)</div>
+        <button class="btn-logout" onclick="window.location.href='index.html'">
             <i class="ph ph-sign-out"></i> Logout
         </button>
     </nav>
@@ -511,7 +472,7 @@
                 <table class="cases-table">
                     <thead>
                         <tr>
-                            <th>Client Name</th>
+                            <th>Client / User ID</th>
                             <th>Visa Type</th>
                             <th>Nationality</th>
                             <th>Status</th>
@@ -534,14 +495,11 @@
     </main>
 
     <script>
-        const supabase = supabase.createClient(
-          'https://fqywyhvvjgizwdobxhjm.supabase.co',
-          'sb_publishable_ZcKvycJRNnNXKiQ4njmJJg_ynyOv5uR'
-        )
+        // --- 1. Supabase Initialization (No local shadowing to prevent TDZ error) ---
+        const { createClient } = supabase
+        const db = createClient('https://fqywyhvvjgizwdobxhjm.supabase.co', 'sb_publishable_ZcKvycJRNnNXKiQ4njmJJg_ynyOv5uR')
 
         // --- 2. DOM Elements ---
-        const loaderOverlay = document.getElementById('loaderOverlay');
-        const logoutBtn = document.getElementById('logoutBtn');
         const refreshBtn = document.getElementById('refreshBtn');
         const casesTableBody = document.getElementById('casesTableBody');
         
@@ -551,28 +509,20 @@
         const statApproved = document.getElementById('statApproved');
         const statRejected = document.getElementById('statRejected');
 
-        // --- 3. Authentication & Security Check ---
-        window.addEventListener('DOMContentLoaded', async () => {
-            // Admin verified! Fade out the loader overlay
-            loaderOverlay.style.opacity = '0';
-            setTimeout(() => {
-                loaderOverlay.style.visibility = 'hidden';
-            }, 400);
-
-            // Load case details
-            loadDashboardData();
-        });
-
-        // --- 4. Data Loading & Operations ---
+        // --- 3. Data Loading & Operations ---
         async function loadDashboardData() {
             setTableLoading();
             
             try {
-                const { data, error } = await supabase.from('cases').select('*')
+                // Fetch direct from cases table
+                const { data, error } = await db.from('cases').select('*')
+                
+                if (error) {
+                    console.log('cases:', data, 'error:', error)
+                    throw error;
+                }
+                
                 console.log('cases:', data, 'error:', error)
-
-                if (error) throw error;
-
                 displayStatsAndTable(data);
 
             } catch (err) {
@@ -598,7 +548,7 @@
                 return;
             }
 
-            // 1. Calculate and update count metrics
+            // 1. Calculate count metrics
             const total = cases.length;
             const pending = cases.filter(c => c.status === 'Submitted' || c.status === 'Under Review' || !c.status).length;
             const approved = cases.filter(c => c.status === 'Approved').length;
@@ -609,7 +559,7 @@
             statApproved.textContent = approved.toString();
             statRejected.textContent = rejected.toString();
 
-            // 2. Render list table rows
+            // 2. Render table rows
             casesTableBody.innerHTML = '';
             
             cases.forEach(caseItem => {
@@ -684,7 +634,7 @@
             });
         }
 
-        // --- 5. Helper State Handlers ---
+        // Helper State Handlers
         function setTableLoading() {
             casesTableBody.innerHTML = `
                 <tr>
@@ -705,21 +655,11 @@
                 </tr>`;
         }
 
-        // --- 6. Event Listeners ---
-        // Refresh Button
+        // --- 4. Event Listeners ---
         refreshBtn.addEventListener('click', loadDashboardData);
 
-        // Logout Operations
-        logoutBtn.addEventListener('click', async () => {
-            if (!supabase) return;
-            try {
-                await supabase.auth.signOut();
-                window.location.href = 'index.html';
-            } catch (err) {
-                console.error("Logout query failed:", err);
-                window.location.href = 'index.html';
-            }
-        });
+        // Load data immediately on page load
+        window.addEventListener('DOMContentLoaded', loadDashboardData);
     </script>
 </body>
 </html>
