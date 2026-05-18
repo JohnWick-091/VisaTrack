@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisaTrack | Case Details</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            /* Colors */
+            --bg-gradient: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%);
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.8);
+            --glass-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --primary-color: #0ea5e9;
+            --btn-dark: #0f172a;
+            --btn-dark-hover: #1e293b;
+            --input-bg: rgba(255, 255, 255, 0.8);
+            --input-border: #cbd5e1;
+            --error-color: #ef4444;
+            
+            /* Status Badge Colors */
+            --status-submitted-bg: rgba(245, 158, 11, 0.1);
+            --status-submitted-text: #b45309;
+            --status-review-bg: rgba(14, 165, 233, 0.1);
+            --status-review-text: #0369a1;
+            --status-received-bg: rgba(99, 102, 241, 0.1);
+            --status-received-text: #4f46e5;
+            --status-approved-bg: rgba(16, 185, 129, 0.1);
+            --status-approved-text: #047857;
+            --status-rejected-bg: rgba(239, 68, 68, 0.1);
+            --status-rejected-text: #b91c1c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: 
+                linear-gradient(135deg, rgba(224, 242, 254, 0.4) 0%, rgba(186, 230, 253, 0.2) 50%, rgba(125, 211, 252, 0.4) 100%),
+                url('https://images.unsplash.com/photo-1499346030926-9a72daac6c63?auto=format&fit=crop&w=1920&q=80') center/cover fixed;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Navbar */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.875rem 2.5rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon-container {
+            width: 36px;
+            height: 36px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+        }
+
+        .logo-icon-container i {
+            font-size: 1.25rem;
+            color: #ffffff;
+        }
+
+        .logo-text {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.25rem;
+            background: #ffffff;
+            border: 1px solid var(--input-border);
+            color: var(--text-main);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 550;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-back:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+        }
+
+        .btn-logout {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.25rem;
+            background: #ffffff;
+            border: 1px solid var(--input-border);
+            color: var(--text-main);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 550;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-logout:hover {
+            background: var(--error-color);
+            color: #ffffff;
+            border-color: var(--error-color);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+        }
+
+        /* Container Layout */
+        .case-container {
+            max-width: 800px;
+            width: 100%;
+            margin: 2.5rem auto;
+            padding: 0 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* Cards */
+        .case-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: var(--glass-shadow);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+            padding-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        /* Details List */
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .detail-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .detail-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        /* Form Inputs */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .form-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .form-select, .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            border: 1px solid var(--input-border);
+            background: var(--input-bg);
+            outline: none;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-select:focus, .form-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+            background: #ffffff;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 0.875rem;
+            background: var(--btn-dark);
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-submit:hover {
+            background: var(--btn-dark-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+        }
+
+        /* Badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.35rem 0.85rem;
+            border-radius: 99px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: capitalize;
+            width: fit-content;
+        }
+
+        .status-badge.submitted {
+            background: var(--status-submitted-bg);
+            color: var(--status-submitted-text);
+        }
+
+        .status-badge.review {
+            background: var(--status-review-bg);
+            color: var(--status-review-text);
+        }
+
+        .status-badge.received {
+            background: var(--status-received-bg);
+            color: var(--status-received-text);
+        }
+
+        .status-badge.approved {
+            background: var(--status-approved-bg);
+            color: var(--status-approved-text);
+        }
+
+        .status-badge.rejected {
+            background: var(--status-rejected-bg);
+            color: var(--status-rejected-text);
+        }
+
+        .status-badge i {
+            font-size: 0.9rem;
+        }
+
+        /* Timeline styling */
+        .timeline {
+            position: relative;
+            margin-top: 1rem;
+            padding-left: 1.5rem;
+            border-left: 2px dashed #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            gap: 1.75rem;
+        }
+
+        .timeline-item {
+            position: relative;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: calc(-1.5rem - 6px);
+            top: 4px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.2);
+        }
+
+        .timeline-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .timeline-time {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .timeline-note {
+            font-size: 0.925rem;
+            color: #334155;
+            background: rgba(255, 255, 255, 0.4);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            line-height: 1.5;
+        }
+
+        /* States */
+        .card-state {
+            padding: 3rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-weight: 550;
+        }
+
+        .card-state .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid rgba(15, 23, 42, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+            margin-bottom: 0.75rem;
+        }
+
+        .card-state.error {
+            color: var(--error-color);
+        }
+
+        .card-state.error i {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 640px) {
+            .navbar {
+                padding: 1rem 1.5rem;
+            }
+            .btn-back span {
+                display: none;
+            }
+            .btn-back i {
+                font-size: 1.15rem;
+            }
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+            .case-card {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-logo">
+            <div class="logo-icon-container">
+                <i class="ph-fill ph-airplane-tilt"></i>
+            </div>
+            <span class="logo-text">VisaTrack</span>
+        </div>
+        <div class="nav-actions">
+            <a href="admin-dashboard.html" class="btn-back">
+                <i class="ph ph-arrow-left"></i> <span>Dashboard</span>
+            </a>
+            <button class="btn-logout" onclick="window.location.href='index.html'">
+                <i class="ph ph-sign-out"></i> Logout
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Workspace -->
+    <main class="case-container" id="mainContainer">
+        
+        <!-- Case Details Card -->
+        <div class="case-card" id="detailsCard">
+            <div class="card-state">
+                <div class="spinner"></div>
+                <div>Fetching application data...</div>
+            </div>
+        </div>
+
+        <!-- Status Management Card -->
+        <div class="case-card" id="managementCard" style="display: none;">
+            <div class="card-header">
+                <h3 class="card-title">Update Application Status</h3>
+            </div>
+            <form id="updateStatusForm">
+                <div class="form-group">
+                    <label class="form-label" for="statusSelect">Select Status</label>
+                    <select class="form-select" id="statusSelect" required>
+                        <option value="Submitted">Submitted</option>
+                        <option value="Under Review">Under Review</option>
+                        <option value="Documents Received">Documents Received</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Rejected">Rejected</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="noteInput">Remarks / Note</label>
+                    <input class="form-input" type="text" id="noteInput" placeholder="Enter status update details..." required>
+                </div>
+                <button class="btn-submit" type="submit" id="submitBtn">
+                    <i class="ph ph-floppy-disk"></i> Update Status
+                </button>
+            </form>
+        </div>
+
+        <!-- Timeline Card -->
+        <div class="case-card" id="timelineCard" style="display: none;">
+            <div class="card-header">
+                <h3 class="card-title">Status Updates Timeline</h3>
+            </div>
+            <div id="timelineContainer">
+                <div class="card-state">
+                    No status history found.
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- 1. Supabase Initialization ---
+        const { createClient } = supabase;
+        const db = createClient('https://fqywyhvvjgizwdobxhjm.supabase.co', 'sb_publishable_ZcKvycJRNnNXKiQ4njmJJg_ynyOv5uR');
+
+        // --- 2. DOM Elements ---
+        const mainContainer = document.getElementById('mainContainer');
+        const detailsCard = document.getElementById('detailsCard');
+        const managementCard = document.getElementById('managementCard');
+        const timelineCard = document.getElementById('timelineCard');
+        const timelineContainer = document.getElementById('timelineContainer');
+        const updateStatusForm = document.getElementById('updateStatusForm');
+        const statusSelect = document.getElementById('statusSelect');
+        const noteInput = document.getElementById('noteInput');
+        const submitBtn = document.getElementById('submitBtn');
+
+        // Extract Case ID from URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const caseId = urlParams.get('id');
+
+        // --- 3. Status Badge Helpers ---
+        function getStatusBadgeHTML(status) {
+            const rawStatus = status || 'Submitted';
+            let statusClass = 'submitted';
+            let statusIcon = 'ph-clock';
+
+            if (rawStatus === 'Under Review') {
+                statusClass = 'review';
+                statusIcon = 'ph-eye';
+            } else if (rawStatus === 'Documents Received') {
+                statusClass = 'received';
+                statusIcon = 'ph-file-arrow-down';
+            } else if (rawStatus === 'Approved') {
+                statusClass = 'approved';
+                statusIcon = 'ph-check-circle';
+            } else if (rawStatus === 'Rejected') {
+                statusClass = 'rejected';
+                statusIcon = 'ph-x-circle';
+            }
+
+            return `
+                <span class="status-badge ${statusClass}">
+                    <i class="ph-bold ${statusIcon}"></i>
+                    ${rawStatus}
+                </span>`;
+        }
+
+        // --- 4. Loading Operations ---
+        async function initPage() {
+            if (!caseId) {
+                setCardError(detailsCard, "Missing application ID in parameter link.");
+                return;
+            }
+            await loadCaseDetails();
+            await loadStatusHistory();
+        }
+
+        async function loadCaseDetails() {
+            try {
+                // Fetch case details from table
+                const { data, error } = await db.from('cases').select('*').eq('id', caseId).single();
+                
+                if (error) {
+                    console.log('case detail error:', error);
+                    throw error;
+                }
+
+                // Render Details
+                renderDetails(data);
+                
+                // Prefill form status Select
+                statusSelect.value = data.status || 'Submitted';
+
+                // Display form
+                managementCard.style.display = 'block';
+
+            } catch (err) {
+                console.error("Failed to load case details:", err);
+                setCardError(detailsCard, "Could not retrieve case details. Check console logs.");
+            }
+        }
+
+        async function loadStatusHistory() {
+            try {
+                // Fetch updates from status_history ordered by created_at in reverse
+                const { data, error } = await db
+                    .from('status_history')
+                    .select('*')
+                    .eq('case_id', caseId)
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    console.log('timeline history fetch error:', error);
+                    throw error;
+                }
+
+                renderTimeline(data);
+                timelineCard.style.display = 'block';
+
+            } catch (err) {
+                console.error("Failed to load status history:", err);
+                timelineContainer.innerHTML = `
+                    <div class="card-state error">
+                        <i class="ph ph-warning-circle"></i>
+                        Failed to fetch status updates history.
+                    </div>`;
+                timelineCard.style.display = 'block';
+            }
+        }
+
+        // --- 5. DOM Rendering Helpers ---
+        function renderDetails(caseItem) {
+            // Client full name fallback
+            let clientName = caseItem.client_name || caseItem.full_name || caseItem.email || caseItem.name;
+            if (!clientName && caseItem.profiles) {
+                clientName = caseItem.profiles.full_name || caseItem.profiles.email || caseItem.profiles.name;
+            }
+            if (!clientName) {
+                clientName = `Client ID: ${caseItem.user_id ? caseItem.user_id.substring(0, 8) : 'Unknown'}...`;
+            }
+
+            const visaType = caseItem.visa_type || 'Not specified';
+            const nationality = caseItem.nationality || 'Not specified';
+            
+            // Format fee
+            let feeString = 'Not Specified';
+            if (caseItem.fee_aed !== undefined && caseItem.fee_aed !== null) {
+                feeString = `${caseItem.fee_aed.toLocaleString()} AED`;
+            } else if (caseItem.fee !== undefined && caseItem.fee !== null) {
+                feeString = `${caseItem.fee.toLocaleString()} AED`;
+            }
+
+            // Format date
+            let formattedDate = 'N/A';
+            if (caseItem.created_at) {
+                try {
+                    formattedDate = new Date(caseItem.created_at).toLocaleDateString(undefined, {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                } catch (e) {
+                    formattedDate = caseItem.created_at;
+                }
+            }
+
+            detailsCard.innerHTML = `
+                <div class="card-header">
+                    <h3 class="card-title">Visa Application Details</h3>
+                </div>
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Client Name</span>
+                        <span class="detail-value" style="font-weight: 700; color: var(--primary-color);">${clientName}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Visa Type</span>
+                        <span class="detail-value">${visaType}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Nationality</span>
+                        <span class="detail-value">${nationality}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Fee Amount</span>
+                        <span class="detail-value">${feeString}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Date Submitted</span>
+                        <span class="detail-value">${formattedDate}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Current Status</span>
+                        <div style="margin-top: 0.25rem;">
+                            ${getStatusBadgeHTML(caseItem.status)}
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        function renderTimeline(historyList) {
+            if (!historyList || historyList.length === 0) {
+                timelineContainer.innerHTML = `
+                    <div class="card-state">
+                        <i class="ph ph-clock-counter-clockwise" style="font-size: 2rem; margin-bottom: 0.5rem; display: block;"></i>
+                        No status updates recorded for this application.
+                    </div>`;
+                return;
+            }
+
+            let timelineHTML = '<div class="timeline">';
+            
+            historyList.forEach(item => {
+                let formattedTime = 'N/A';
+                if (item.created_at) {
+                    try {
+                        formattedTime = new Date(item.created_at).toLocaleDateString(undefined, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    } catch (e) {
+                        formattedTime = item.created_at;
+                    }
+                }
+
+                timelineHTML += `
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-header">
+                            ${getStatusBadgeHTML(item.status)}
+                            <span class="timeline-time">${formattedTime}</span>
+                        </div>
+                        <div class="timeline-note">
+                            ${item.note || 'No notes left.'}
+                        </div>
+                    </div>`;
+            });
+
+            timelineHTML += '</div>';
+            timelineContainer.innerHTML = timelineHTML;
+        }
+
+        function setCardError(card, message) {
+            card.innerHTML = `
+                <div class="card-state error">
+                    <i class="ph ph-warning-circle"></i>
+                    <div>${message}</div>
+                </div>`;
+        }
+
+        // --- 6. Form Submission / Update Operations ---
+        updateStatusForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const newStatus = statusSelect.value;
+            const note = noteInput.value.trim();
+            
+            // Set loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="ph ph-circle-notch spin" style="animation: spin 0.8s linear infinite;"></i> Saving...';
+
+            try {
+                // 1. Update status inside 'cases' table
+                const { error: updateError } = await db
+                    .from('cases')
+                    .update({ status: newStatus })
+                    .eq('id', caseId);
+
+                if (updateError) {
+                    console.log('update status error:', updateError);
+                    throw updateError;
+                }
+
+                // 2. Insert record inside 'status_history' table
+                const { error: insertError } = await db
+                    .from('status_history')
+                    .insert({
+                        case_id: caseId,
+                        status: newStatus,
+                        note: note
+                    });
+
+                if (insertError) {
+                    console.log('insert status history error:', insertError);
+                    throw insertError;
+                }
+
+                // Reset Remarks Input
+                noteInput.value = '';
+                
+                // Refresh data
+                await loadCaseDetails();
+                await loadStatusHistory();
+
+            } catch (err) {
+                console.error("Failed to update status info:", err);
+                alert("Error updating status. See developer tools console logs.");
+            } finally {
+                // Restore button
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="ph ph-floppy-disk"></i> Update Status';
+            }
+        });
+
+        // Run on page load
+        window.addEventListener('DOMContentLoaded', initPage);
+    </script>
+</body>
+</html>
