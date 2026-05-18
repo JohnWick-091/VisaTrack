@@ -534,15 +534,10 @@
     </main>
 
     <script>
-        // --- 1. Supabase Config & Client Setup ---
-        const SUPABASE_URL = 'https://fqywyhvvjgizwdobxhjm.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_ZcKvycJRNnNXKiQ4njmJJg_ynyOv5uR';
-        
-        try {
-            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        } catch (e) {
-            console.error("Supabase init error:", e);
-        }
+        const supabase = supabase.createClient(
+          'https://fqywyhvvjgizwdobxhjm.supabase.co',
+          'sb_publishable_ZcKvycJRNnNXKiQ4njmJJg_ynyOv5uR'
+        )
 
         // --- 2. DOM Elements ---
         const loaderOverlay = document.getElementById('loaderOverlay');
@@ -601,14 +596,12 @@
             setTableLoading();
             
             try {
-                // Fetch cases directly from cases table (no profiles join)
-                const { data: cases, error: casesError } = await supabase
-                    .from('cases')
-                    .select('*');
+                const { data, error } = await supabase.from('cases').select('*')
+                console.log('cases:', data, 'error:', error)
 
-                if (casesError) throw casesError;
+                if (error) throw error;
 
-                displayStatsAndTable(cases);
+                displayStatsAndTable(data);
 
             } catch (err) {
                 console.error("Fetch failed:", err);
