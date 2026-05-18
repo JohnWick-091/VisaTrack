@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisaTrack | Sign In</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            /* Colors */
+            --bg-gradient: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%);
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.8);
+            --glass-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --primary-color: #0ea5e9;
+            --btn-dark: #0f172a;
+            --btn-dark-hover: #1e293b;
+            --input-bg: rgba(255, 255, 255, 0.8);
+            --input-border: #cbd5e1;
+            --input-focus: #0ea5e9;
+            --error-color: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: 
+                linear-gradient(135deg, rgba(224, 242, 254, 0.4) 0%, rgba(186, 230, 253, 0.2) 50%, rgba(125, 211, 252, 0.4) 100%),
+                url('https://images.unsplash.com/photo-1499346030926-9a72daac6c63?auto=format&fit=crop&w=1920&q=80') center/cover fixed;
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        .top-logo {
+            position: absolute;
+            top: 2rem;
+            left: 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideUpFade 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            z-index: 10;
+            
+            /* Glassmorphism Pill */
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 99px;
+            padding: 0.5rem 1.25rem 0.5rem 0.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        }
+
+        .logo-icon-container {
+            width: 36px;
+            height: 36px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+        }
+
+        .logo-icon-container i {
+            font-size: 1.25rem;
+            color: #ffffff;
+        }
+
+        .logo-text {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
+        }
+
+        .login-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 3rem;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: var(--glass-shadow);
+            transform: translateY(20px);
+            opacity: 0;
+            animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes slideUpFade {
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .header-icon {
+            width: 48px;
+            height: 48px;
+            background: #ffffff;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            color: var(--primary-color);
+        }
+
+        .header-icon i {
+            font-size: 28px;
+        }
+
+        .title {
+            color: var(--text-main);
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-weight: 400;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+            position: relative;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 1rem;
+            color: var(--text-muted);
+            font-size: 1.25rem;
+            pointer-events: none;
+            transition: color 0.3s ease;
+        }
+
+        .form-input {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 12px;
+            padding: 0.875rem 1rem 0.875rem 2.75rem;
+            font-size: 0.95rem;
+            color: var(--text-main);
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .form-input:focus {
+            border-color: var(--input-focus);
+            box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+            background: #ffffff;
+        }
+
+        .form-input:focus + .input-icon {
+            color: var(--primary-color);
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s ease;
+        }
+
+        .toggle-password:hover {
+            color: var(--text-main);
+        }
+
+        .toggle-password i {
+            font-size: 1.25rem;
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 1.5rem;
+        }
+
+        .forgot-link {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .forgot-link:hover {
+            color: var(--primary-color);
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: var(--btn-dark);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-submit:hover {
+            background: var(--btn-dark-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .btn-submit.loading .spinner {
+            display: block;
+        }
+
+        .btn-submit.loading .btn-text {
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            color: var(--error-color);
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 8px;
+            padding: 0.75rem;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+            display: none;
+            text-align: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 2rem 0;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--input-border);
+        }
+
+        .divider::before { margin-right: 1rem; }
+        .divider::after { margin-left: 1rem; }
+
+        .oauth-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-oauth {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background: #ffffff;
+            border: 1px solid var(--input-border);
+            border-radius: 12px;
+            padding: 0.875rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-oauth:hover {
+            background: #f8fafc;
+            border-color: var(--text-muted);
+        }
+
+        .btn-oauth img {
+            width: 20px;
+            height: 20px;
+        }
+
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 2rem 1.5rem;
+            }
+            .oauth-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-logo">
+        <div class="logo-icon-container">
+            <i class="ph-fill ph-airplane-tilt"></i>
+        </div>
+        <span class="logo-text">VisaTrack</span>
+    </div>
+    <div class="login-card">
+        <div class="header">
+            <div class="header-icon">
+                <i class="ph ph-airplane-tilt"></i>
+            </div>
+            <h1 class="title">Sign in to VisaTrack</h1>
+            <p class="subtitle">Track your visa application in real time</p>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <input type="email" id="email" class="form-input" placeholder="Email address" required>
+                    <i class="ph ph-envelope-simple input-icon"></i>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <input type="password" id="password" class="form-input" placeholder="Password" required>
+                    <i class="ph ph-lock-key input-icon"></i>
+                    <button type="button" class="toggle-password" id="togglePassword">
+                        <i class="ph ph-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-options">
+                <a href="forgot-password.html" class="forgot-link">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="btn-submit" id="submitBtn">
+                <span class="btn-text">Sign In</span>
+                <span class="spinner"></span>
+            </button>
+
+            <div id="errorMessage" class="error-message"></div>
+        </form>
+
+        <div class="divider">Or sign in with</div>
+
+        <div class="oauth-buttons">
+            <button class="btn-oauth" id="googleBtn" type="button">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google">
+                Google
+            </button>
+            <button class="btn-oauth" id="facebookBtn" type="button">
+                <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" alt="Facebook">
+                Facebook
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Supabase Initialization ---
+        // REPLACE THESE WITH YOUR ACTUAL SUPABASE URL AND ANON KEY
+        const SUPABASE_URL = 'https://fqywyhvvjgizwdobxhjm.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_ZcKvycJRNnNXKiQ4njmJJg_ynyOv5uR';
+        
+        let supabase;
+        try {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } catch (e) {
+            console.error("Supabase init error (keys missing):", e);
+        }
+
+        // --- 2. DOM Elements ---
+        const loginForm = document.getElementById('loginForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const togglePasswordBtn = document.getElementById('togglePassword');
+        const submitBtn = document.getElementById('submitBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const googleBtn = document.getElementById('googleBtn');
+        const facebookBtn = document.getElementById('facebookBtn');
+
+        // --- 3. UI Interactions ---
+
+        // Toggle Password Visibility
+        togglePasswordBtn.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            
+            // Toggle icon
+            const icon = togglePasswordBtn.querySelector('i');
+            if (type === 'password') {
+                icon.classList.remove('ph-eye-slash');
+                icon.classList.add('ph-eye');
+            } else {
+                icon.classList.remove('ph-eye');
+                icon.classList.add('ph-eye-slash');
+            }
+        });
+
+        // Show error message helper
+        const showError = (msg) => {
+            errorMessage.textContent = msg;
+            errorMessage.style.display = 'block';
+            submitBtn.classList.remove('loading');
+            submitBtn.disabled = false;
+        };
+
+        // Hide error message helper
+        const hideError = () => {
+            errorMessage.style.display = 'none';
+        };
+
+        // --- 4. Authentication Logic ---
+
+        // Email / Password Login
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideError();
+            
+            // Start loading state
+            submitBtn.classList.add('loading');
+            submitBtn.disabled = true;
+
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+
+            if (SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+                showError("Please configure your Supabase URL and Anon Key in the code.");
+                return;
+            }
+
+            try {
+                // 1. Sign in with Supabase
+                const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password,
+                });
+
+                if (authError) throw authError;
+
+                if (authData.user) {
+                    // 2. Fetch user role from 'profiles' table
+                    const { data: profileData, error: profileError } = await supabase
+                        .from('profiles')
+                        .select('role')
+                        .eq('id', authData.user.id)
+                        .single();
+
+                    if (profileError) {
+                        console.error("Error fetching profile:", profileError);
+                        throw new Error("Could not fetch user profile details.");
+                    }
+
+                    // 3. Redirect based on role
+                    const role = profileData?.role;
+                    if (role === 'admin') {
+                        window.location.href = '/admin/dashboard';
+                    } else if (role === 'client') {
+                        window.location.href = '/client/dashboard';
+                    } else {
+                        // Fallback redirect if role is undefined or something else
+                        window.location.href = '/dashboard';
+                    }
+                }
+            } catch (error) {
+                showError(error.message || "An unexpected error occurred during login.");
+            }
+        });
+
+        const redirectUrl = window.location.href.split('#')[0].split('?')[0];
+
+        // Google OAuth Login
+        googleBtn.addEventListener('click', async () => {
+            if (SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+                showError("Please configure your Supabase URL and Anon Key in the code.");
+                return;
+            }
+            try {
+                const { error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: redirectUrl
+                    }
+                });
+                if (error) throw error;
+            } catch (error) {
+                showError(error.message);
+            }
+        });
+
+        // Facebook OAuth Login
+        facebookBtn.addEventListener('click', async () => {
+            if (SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+                showError("Please configure your Supabase URL and Anon Key in the code.");
+                return;
+            }
+            try {
+                const { error } = await supabase.auth.signInWithOAuth({
+                    provider: 'facebook',
+                    options: {
+                        redirectTo: redirectUrl
+                    }
+                });
+                if (error) throw error;
+            } catch (error) {
+                showError(error.message);
+            }
+        });
+
+        // Auto-redirect logged-in users or handle OAuth callback redirection
+        window.addEventListener('DOMContentLoaded', async () => {
+            if (SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+                try {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (session && session.user) {
+                        // Show a loading overlay or state since we are redirecting
+                        submitBtn.classList.add('loading');
+                        submitBtn.disabled = true;
+                        
+                        const { data: profileData, error: profileError } = await supabase
+                            .from('profiles')
+                            .select('role')
+                            .eq('id', session.user.id)
+                            .single();
+
+                        if (profileError) {
+                            console.error("Error fetching profile on load:", profileError);
+                            // If profile doesn't exist yet, redirect to default dashboard
+                            window.location.href = 'dashboard.html';
+                            return;
+                        }
+
+                        const role = profileData?.role;
+                        if (role === 'admin') {
+                            window.location.href = '/admin/dashboard';
+                        } else if (role === 'client') {
+                            window.location.href = '/client/dashboard';
+                        } else {
+                            window.location.href = '/dashboard';
+                        }
+                    }
+                } catch (err) {
+                    console.error("Session redirect error:", err);
+                    submitBtn.classList.remove('loading');
+                    submitBtn.disabled = false;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
